@@ -47,19 +47,20 @@ Last modified by: Anno Sportel (anno.sportel@hsbcad.com)
 /// AS - 1.05 - 31.08.2010 	- Split linesegs on top and bottom plate. No longer use dummy beams for that.
 /// AS - 1.06 - 12.06.2015 	- Nail zone 7 and not 6 if it is available. Add support for execution on generate construction and from master tsl.
 /// AS - 1.07 - 03.09.2015 	- Dummy beams removed outside the loop for creating nail lines.
+/// OR - 1.08 - 05.06.2019	- Offset from T connected beams changed 
 /// </history>
 
 double dEps(Unit(1,"mm"));
 
 double dSizeTP = U(54);
-double dDistanceToTopPlate = U(225);
+double dDistanceToTopPlate = U(25);
 
 double dSizeBP = U(54);
-double dDistanceToBottomPlate = U(210);
+double dDistanceToBottomPlate = U(10);
 
-double dDistanceToTConnection = U(25.1);
+double dDistanceToTConnection = U(55.6);
 double dDistanceToSheetEdge = U(22);
-double dOffsetFromSheetJoint = U(12);
+double dOffsetFromSheetJoint = U(100);
 double dOffsetFromSheetEdge = U(10);
 
 int nColorIndex = 4;
@@ -86,6 +87,10 @@ _ThisInst.setSequenceNumber(sequenceForGeneration);
 PropDouble dDistBetweenNails(1,U(200),T("Distance between nails"));
 dDistBetweenNails.setDescription(T("|Sets the distance between the nails.|"));
 dDistBetweenNails.setCategory(categories[2]);
+
+//Set the distance to the top sheet depending on the cc distance
+dDistanceToTopPlate += dDistBetweenNails;
+dDistanceToBottomPlate += dDistBetweenNails;
 
 // Is it an initial insert by the tool inserter? Return and wait for recalc after the props are set correctly.
 int executeMode = -1;
@@ -226,7 +231,7 @@ for( int i=0;i<arAllBeams.length();i++ ){
 	int nType = bm.type();
 	String sBmCode = bm.beamCode().token(0);
 	
-	if( arSBmCodeToExcludeForTConnection.find(sBmCode) == -1 )
+	if( arSBmCodeToExcludeForTConnection.find(sBmCode) == -1)
 		arBmAllowedForTConnection.append(bm);
 	
 	if( arNTypeTopPlate.find(nType) != -1 ){//Top plates
@@ -428,19 +433,20 @@ for( int i=0;i<arBm.length();i++ ){
 				//reportNotice("\nSTART:\t"+abs(vxBm.dotProduct(ptStart - ptIntersect)));
 				//reportNotice("\nEND:\t"+abs(vxBm.dotProduct(ptEnd - ptIntersect)));
 				if( abs(vxBm.dotProduct(ptStart - ptIntersect)) < U(75) ){
-					lnSeg = LineSeg(ptStart + vLineSeg * U(3), ptEnd);
+					lnSeg = LineSeg(ptStart + vLineSeg * dDistanceToTConnection, ptEnd);
 					ptStart = lnSeg.ptStart();
 					ptEnd = lnSeg.ptEnd();
 					bIsTConnection = TRUE;
 				}	
 				else if( abs(vxBm.dotProduct(ptEnd - ptIntersect)) < U(75) ){
-					lnSeg = LineSeg(ptStart, ptEnd - vLineSeg * U(3));
+					lnSeg = LineSeg(ptStart, ptEnd - vLineSeg * dDistanceToTConnection);
 					ptStart = lnSeg.ptStart();
 					ptEnd = lnSeg.ptEnd();
 					bIsTConnection = TRUE;
 				}
 			}
 		}
+
 
 
 		if( vLineSeg.dotProduct(vyEl) > .9 ){
@@ -505,7 +511,9 @@ for( int i=0;i<arBm.length();i++ ){
 		// add the nailing line to the database
 		NailLine nl;
 		nl.dbCreate(el, enl);
+	
 		nl.setColor(nColorIndex); // set color of Nailing line
+
 	}
 	
 	//Delete the dummy beams
@@ -514,7 +522,6 @@ for( int i=0;i<arBm.length();i++ ){
 		bmDummy.dbErase();
 	}
 }
-
 eraseInstance();
 
 
@@ -537,4 +544,21 @@ eraseInstance();
 
 
 
+
+#End
+#BeginMapX
+<?xml version="1.0" encoding="utf-16"?>
+<Hsb_Map>
+  <lst nm="TslIDESettings">
+    <lst nm="HostSettings">
+      <dbl nm="PreviewTextHeight" ut="L" vl="1" />
+    </lst>
+    <lst nm="{E1BE2767-6E4B-4299-BBF2-FB3E14445A54}">
+      <lst nm="BreakPoints" />
+    </lst>
+  </lst>
+  <lst nm="TslInfo" />
+  <unit ut="L" uv="millimeter" />
+  <unit ut="A" uv="radian" />
+</Hsb_Map>
 #End
