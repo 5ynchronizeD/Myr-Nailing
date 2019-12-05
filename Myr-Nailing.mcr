@@ -1,7 +1,7 @@
 ﻿#Version 8
 #BeginDescription
-Last modified by: Anno Sportel (anno.sportel@hsbcad.com)
-03.09.2015  -  version 1.07
+Last modified by: OBOS (Oscar.ragnerby@obos.se)
+OR - 1.08 - 12.11.2019  - Add no nail area 
 
 
 
@@ -17,7 +17,7 @@ Last modified by: Anno Sportel (anno.sportel@hsbcad.com)
 #ImplInsert 1
 #FileState 1
 #MajorVersion 1
-#MinorVersion 7
+#MinorVersion 8
 #KeyWords 
 #BeginContents
 /// <summary Lang=en>
@@ -32,7 +32,6 @@ Last modified by: Anno Sportel (anno.sportel@hsbcad.com)
 /// .
 /// </remark>
 
-/// <version  value="1.07" date="03.09.2015"></version>
 
 /// <history>
 /// AS - 1.00 - 05.05.2008 	- Pilot version
@@ -47,6 +46,7 @@ Last modified by: Anno Sportel (anno.sportel@hsbcad.com)
 /// AS - 1.05 - 31.08.2010 	- Split linesegs on top and bottom plate. No longer use dummy beams for that.
 /// AS - 1.06 - 12.06.2015 	- Nail zone 7 and not 6 if it is available. Add support for execution on generate construction and from master tsl.
 /// AS - 1.07 - 03.09.2015 	- Dummy beams removed outside the loop for creating nail lines.
+/// OR - 1.08 - 12.11.2019 	- Add no nail area 
 /// </history>
 
 double dEps(Unit(1,"mm"));
@@ -61,6 +61,7 @@ double dDistanceToTConnection = U(25.1);
 double dDistanceToSheetEdge = U(22);
 double dOffsetFromSheetJoint = U(12);
 double dOffsetFromSheetEdge = U(10);
+double dNoNailZoneSize = U(45);
 
 int nColorIndex = 4;
 
@@ -68,6 +69,11 @@ String categories[] = {
 	T("|Element filter|"),
 	T("|Generation|"),
 	T("|Nailing|")
+};
+
+String SubElementToSkipNoNailZone[] = 
+{
+	"MH_EL"
 };
 
 String elementFilterCatalogNames[] = TslInst().getListOfCatalogNames("hsbElementFilter");
@@ -98,6 +104,12 @@ if (executeMode == 69)
 String arSCatalogNames[] = TslInst().getListOfCatalogNames("Myr-Nailing");
 if( arSCatalogNames.find(_kExecuteKey) != -1 ) 
 	setPropValuesFromCatalog(_kExecuteKey);
+	
+if(_bOnElementConstructed)
+{ 
+	eraseInstance();
+}
+
 
 if( _bOnInsert ){
 	if( insertCycleCount() > 1 ){
@@ -196,7 +208,130 @@ Vector3d vyEl = csEl.vecY();
 Vector3d vzEl = csEl.vecZ();
 //Set origin point
 _Pt0 = csEl.ptOrg();
+_Pt0.vis(5);
 
+Display NoNailZones(5);
+
+//Collect all openings
+
+//Entity arEntOp[] = el.collectEntities(TRUE, Opening(), _kModelSpace);
+
+
+//Add no nail zones
+Opening arOpenings[] = el.opening();
+
+for (int i = 0; i < arOpenings.length(); i++)
+{
+	OpeningSF op = (OpeningSF)arOpenings[i];
+	
+	Element el = op.element();
+	CoordSys elementCoordSys = el.coordSys();
+	Vector3d elX = elementCoordSys.vecX();
+	Vector3d elZ = elementCoordSys.vecZ();
+	Vector3d elY = elementCoordSys.vecY();
+	
+	//reportMessage(op.constrDetail());
+	//reportMessage(SubElementToSkipNoNailZone.find(op.constrDetail()));
+	
+	if (SubElementToSkipNoNailZone.find(op.constrDetail()) != -1) continue;
+	
+	CoordSys csOp = op.coordSys();
+	Vector3d openingZ = csOp.vecZ();
+	Vector3d openingX = csOp.vecX();
+	Vector3d openingY = csOp.vecY();
+	openingX.rotateBy(180, elZ);
+	
+	csOp.vis(2);
+	
+	openingX.normalize();
+	openingZ.normalize();
+	openingY.normalize();
+	
+	
+	PLine plOp = op.plShape();
+	
+	Point3d arPtOp[] = plOp.vertexPoints(TRUE);
+	
+	Line lnX(csEl.ptOrg(), vxEl);
+	Line lnY(csEl.ptOrg(), vyEl);
+	lnX.vis();
+	lnY.vis();
+	Point3d arPtOpX[] = lnX.orderPoints(arPtOp);
+	Point3d arPtOpY[] = lnY.orderPoints(arPtOp);
+	
+	if ( arPtOpX.length() < 2 || arPtOpY.length() < 2 )
+	{
+		reportMessage(T("|The selected opening has an invalid outline|!"));
+		eraseInstance();
+		return;
+	}
+	
+	Point3d ptOpCenter = .5 * (arPtOpX[0] + arPtOpX[arPtOpX.length() - 1]);
+	
+	if (_bOnDebug) ptOpCenter.vis();
+	
+	for (int pt = 0; pt < arPtOpX.length(); pt++) {
+		
+		Point3d ptCorner = arPtOpX[pt];
+		PLine plNoNailArea;
+		Point3d arNoNailArea[0];
+		Vector3d vVerticalDirection;
+		Vector3d vHorizontalDirection;
+		
+		
+		if (openingY.dotProduct(ptOpCenter - ptCorner) < 0)
+		{
+			vVerticalDirection = openingY;
+		}
+		else
+		{
+			vVerticalDirection = openingY.rotateBy(180, elZ);
+		}
+		
+		if (csOp.vecX().dotProduct(ptOpCenter - ptCorner) < 0)
+		{
+			vHorizontalDirection = csOp.vecX();
+		}
+		else
+		{
+			vHorizontalDirection = csOp.vecX().rotateBy(180, elY);
+		}
+		
+		vHorizontalDirection.vis(ptCorner, 20);
+		vVerticalDirection.vis(ptCorner, 20);
+		
+		
+		
+		PlaneProfile ppEl = el.plEnvelope();
+		ppEl.vis(50);
+		
+		//Check if point is valid
+		Point3d NewPoint = ptCorner + vVerticalDirection * dNoNailZoneSize;
+		NewPoint.vis();
+		
+		int bInElement = ppEl.pointInProfile(NewPoint);
+		
+		if(elY.dotProduct(_Pt0 - NewPoint) < 0)
+		//if (bInElement)
+		{
+			
+			//if (op.sillHeight() > 45 && ptCorner + vVerticalDirection * dNoNailZoneSize) {
+			plNoNailArea.addVertex(ptCorner);
+			plNoNailArea.addVertex(ptCorner + vVerticalDirection * dNoNailZoneSize);
+			plNoNailArea.addVertex((ptCorner + vVerticalDirection * dNoNailZoneSize) + vHorizontalDirection * dNoNailZoneSize);
+			plNoNailArea.addVertex(ptCorner + vHorizontalDirection * dNoNailZoneSize);
+			plNoNailArea.addVertex(ptCorner);
+			
+			ElemNoNail NoNailArea(-1,plNoNailArea);
+			el.addTool(NoNailArea);
+		}
+		
+		
+	}
+}
+
+//NoNailZones.vis();
+//return;
 //Display
 Display dp(-1);
 
@@ -239,7 +374,7 @@ for( int i=0;i<arAllBeams.length();i++ ){
 
 //LineSeg used during development
 LineSeg lnSegMinMax = el.segmentMinMax();
-dp.draw(lnSegMinMax);
+//dp.draw(lnSegMinMax);
 
 // remove all nailing lines of nZone with color nColorIndex
 int nZnToNail = -1; // Change this to zone -2 if that zone has sheets.
@@ -515,8 +650,8 @@ for( int i=0;i<arBm.length();i++ ){
 	}
 }
 
-eraseInstance();
 
+//eraseInstance();
 
 
 
@@ -537,4 +672,35 @@ eraseInstance();
 
 
 
+
+
+
+
+
+#End
+#BeginMapX
+<?xml version="1.0" encoding="utf-16"?>
+<Hsb_Map>
+  <lst nm="TslIDESettings">
+    <lst nm="HOSTSETTINGS">
+      <dbl nm="PREVIEWTEXTHEIGHT" ut="L" vl="1" />
+    </lst>
+    <lst nm="{E1BE2767-6E4B-4299-BBF2-FB3E14445A54}">
+      <lst nm="BREAKPOINTS">
+        <int nm="BREAKPOINT" vl="293" />
+      </lst>
+    </lst>
+  </lst>
+  <lst nm="TslInfo">
+    <lst nm="TSLINFO">
+      <lst nm="TSLINFO">
+        <lst nm="TSLINFO">
+          <lst nm="TSLINFO" />
+        </lst>
+      </lst>
+    </lst>
+  </lst>
+  <unit ut="L" uv="millimeter" />
+  <unit ut="A" uv="radian" />
+</Hsb_Map>
 #End
