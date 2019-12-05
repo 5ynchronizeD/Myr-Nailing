@@ -104,6 +104,12 @@ if (executeMode == 69)
 String arSCatalogNames[] = TslInst().getListOfCatalogNames("Myr-Nailing");
 if( arSCatalogNames.find(_kExecuteKey) != -1 ) 
 	setPropValuesFromCatalog(_kExecuteKey);
+	
+if(_bOnElementConstructed)
+{ 
+	eraseInstance();
+}
+
 
 if( _bOnInsert ){
 	if( insertCycleCount() > 1 ){
@@ -644,8 +650,8 @@ for( int i=0;i<arBm.length();i++ ){
 	}
 }
 
-//eraseInstance();
 
+//eraseInstance();
 
 
 
@@ -681,7 +687,7 @@ for( int i=0;i<arBm.length();i++ ){
     </lst>
     <lst nm="{E1BE2767-6E4B-4299-BBF2-FB3E14445A54}">
       <lst nm="BREAKPOINTS">
-        <int nm="BREAKPOINT" vl="287" />
+        <int nm="BREAKPOINT" vl="293" />
       </lst>
     </lst>
   </lst>
