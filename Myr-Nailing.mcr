@@ -368,7 +368,7 @@ for( int i=0;i<arAllBeams.length();i++ ){
 
 //LineSeg used during development
 LineSeg lnSegMinMax = el.segmentMinMax();
-dp.draw(lnSegMinMax);
+//dp.draw(lnSegMinMax);
 
 // remove all nailing lines of nZone with color nColorIndex
 int nZnToNail = -1; // Change this to zone -2 if that zone has sheets.
@@ -676,12 +676,12 @@ for( int i=0;i<arBm.length();i++ ){
 <?xml version="1.0" encoding="utf-16"?>
 <Hsb_Map>
   <lst nm="TslIDESettings">
-    <lst nm="HostSettings">
-      <dbl nm="PreviewTextHeight" ut="L" vl="1" />
+    <lst nm="HOSTSETTINGS">
+      <dbl nm="PREVIEWTEXTHEIGHT" ut="L" vl="1" />
     </lst>
     <lst nm="{E1BE2767-6E4B-4299-BBF2-FB3E14445A54}">
-      <lst nm="BreakPoints">
-        <int nm="BreakPoint" vl="287" />
+      <lst nm="BREAKPOINTS">
+        <int nm="BREAKPOINT" vl="287" />
       </lst>
     </lst>
   </lst>
