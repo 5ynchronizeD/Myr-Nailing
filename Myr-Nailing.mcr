@@ -1,7 +1,7 @@
 ﻿#Version 8
 #BeginDescription
-Last modified by: Anno Sportel (anno.sportel@hsbcad.com)
-03.09.2015  -  version 1.07
+Last modified by: OBOS (Oscar.ragnerby@obos.se)
+05.12.2019  -  version 1.09
 
 
 
@@ -17,7 +17,7 @@ Last modified by: Anno Sportel (anno.sportel@hsbcad.com)
 #ImplInsert 1
 #FileState 1
 #MajorVersion 1
-#MinorVersion 7
+#MinorVersion 9
 #KeyWords 
 #BeginContents
 /// <summary Lang=en>
@@ -32,7 +32,7 @@ Last modified by: Anno Sportel (anno.sportel@hsbcad.com)
 /// .
 /// </remark>
 
-/// <version  value="1.07" date="03.09.2015"></version>
+/// <version  value="1.09" date="05.12.2019"></version>
 
 /// <history>
 /// AS - 1.00 - 05.05.2008 	- Pilot version
@@ -48,15 +48,16 @@ Last modified by: Anno Sportel (anno.sportel@hsbcad.com)
 /// AS - 1.06 - 12.06.2015 	- Nail zone 7 and not 6 if it is available. Add support for execution on generate construction and from master tsl.
 /// AS - 1.07 - 03.09.2015 	- Dummy beams removed outside the loop for creating nail lines.
 /// OR - 1.08 - 05.06.2019	- Offset from T connected beams changed 
+/// OR - 1.09 - 05.12.2019	- Offset from T connected beams changed 
 /// </history>
 
 double dEps(Unit(1,"mm"));
 
 double dSizeTP = U(54);
-double dDistanceToTopPlate = U(25);
+double dDistanceToTopPlate = U(225);
 
 double dSizeBP = U(54);
-double dDistanceToBottomPlate = U(10);
+double dDistanceToBottomPlate = U(210);
 
 double dDistanceToTConnection = U(55.6);
 double dDistanceToSheetEdge = U(22);
@@ -87,10 +88,6 @@ _ThisInst.setSequenceNumber(sequenceForGeneration);
 PropDouble dDistBetweenNails(1,U(200),T("Distance between nails"));
 dDistBetweenNails.setDescription(T("|Sets the distance between the nails.|"));
 dDistBetweenNails.setCategory(categories[2]);
-
-//Set the distance to the top sheet depending on the cc distance
-dDistanceToTopPlate += dDistBetweenNails;
-dDistanceToBottomPlate += dDistBetweenNails;
 
 // Is it an initial insert by the tool inserter? Return and wait for recalc after the props are set correctly.
 int executeMode = -1;
@@ -545,6 +542,7 @@ eraseInstance();
 
 
 
+
 #End
 #BeginMapX
 <?xml version="1.0" encoding="utf-16"?>
@@ -557,7 +555,9 @@ eraseInstance();
       <lst nm="BreakPoints" />
     </lst>
   </lst>
-  <lst nm="TslInfo" />
+  <lst nm="TslInfo">
+    <lst nm="TSLINFO" />
+  </lst>
   <unit ut="L" uv="millimeter" />
   <unit ut="A" uv="radian" />
 </Hsb_Map>
